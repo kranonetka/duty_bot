@@ -4,7 +4,7 @@ from duty_bot.credentials import DB_FILE, VK_API_TOKEN6_6
 import vk_api
 import logging
 
-logging.getLogger("vk_api").setLevel(logging.DEBUG)
+logging.basicConfig(level=logging.DEBUG)
 
 GROUP_ID = 192644739
 OWNERS6_6 = (227725150, 138443566, 299443070, 180583820, 259344328)
