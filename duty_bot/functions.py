@@ -5,7 +5,7 @@ import random
 from datetime import datetime, timedelta
 from vk_api.keyboard import VkKeyboard, VkKeyboardColor
 import json
-from duty_bot import vk_bot_session6_6, db, GROUP_ID, OWNERS6_6
+from duty_bot import vk_bot_session6_6, db, GROUP_ID, OWNERS6_6, bot_logger
 from duty_bot.models import LastRequests, SyncTable, DutyRooms
 import hmac
 import hashlib
@@ -47,16 +47,22 @@ MONTHS = {
 
 
 def send_text(message: str, peer_id: int, **kwargs) -> None:
+    bot_logger.info(f"Sending message {message} to {peer_id}")
+    bot_logger.debug(f"{send_text.__name__} kwargs before saturation {kwargs}")
     kwargs.update(random_id=random.getrandbits(64), keyboard=default_keyboard, message=message, peer_id=peer_id)
+    bot_logger.debug(f"{send_text.__name__} kwargs after saturation {kwargs}")
     vk_bot_session6_6.method("messages.send", kwargs)
 
 
 def greetings(peer_id: int) -> None:
+    bot_logger.info(f"Greetings to {peer_id}")
     send_text("Привет!", peer_id)
 
 
 def get_last_request(peer_id: int) -> Union[datetime, None]:
+    bot_logger.info(f"Getting last request from {peer_id}")
     last_request: LastRequests = LastRequests.query.filter_by(peer_id=peer_id).first()
+    bot_logger.debug(f"Last request is {last_request}")
     if last_request is not None:
         return last_request.request_date
     else:
@@ -64,11 +70,14 @@ def get_last_request(peer_id: int) -> Union[datetime, None]:
 
 
 def get_duty_rooms(date: datetime) -> Tuple[int, int]:
+    bot_logger.info(f"Getting duty rooms for date {date}")
     sync_info = SyncTable.query.order_by(SyncTable.id.desc()).first()
+    bot_logger.debug(f"Sync info is {sync_info}")
     sync_date = sync_info.date
     sync_left_room = sync_info.left_room
     sync_right_room = sync_info.right_room
     offset = (date - sync_date).days
+    bot_logger.debug(f"Days offset is {offset}")
     all_rooms = [room.room for room in DutyRooms.query.all()]
     left_rooms = sorted(filter(LEFT_ROOMS.__contains__, all_rooms))
     right_rooms = sorted(filter(RIGHT_ROOMS.__contains__, all_rooms))
@@ -84,11 +93,13 @@ def nothing(*args, **kwargs) -> None:
 
 
 def set_last_request(peer_id: int, request_date: Union[datetime, None]) -> None:
+    bot_logger.info(f"Setting last request from {peer_id} to {request_date}")
     db.session.merge(LastRequests(peer_id=peer_id, request_date=request_date), load=True)
     db.session.commit()
 
 
 def sync_rooms(date: datetime, from_peer_id: int, left_room: int = None, right_room: int = None) -> None:
+    bot_logger.info(f"Synchronization {left_room} and {right_room} from {from_peer_id} to date {date}")
     expected_left_room, expected_right_room = get_duty_rooms(date)
     date = datetime(date.year, date.month, date.day)
     db.session.add(SyncTable(
@@ -100,6 +111,7 @@ def sync_rooms(date: datetime, from_peer_id: int, left_room: int = None, right_r
 
 
 def today(peer_id: int, reply_to: int, today_date: datetime) -> None:
+    bot_logger.info(f"Today duty answering to {peer_id}, msg_id={reply_to}, date={today_date}")
     left_room, right_room = get_duty_rooms(today_date)
     msg = "Сегодня дежурят {} и {}".format(left_room, right_room)
     send_text(msg, peer_id, reply_to=reply_to)
@@ -107,6 +119,7 @@ def today(peer_id: int, reply_to: int, today_date: datetime) -> None:
 
 
 def show_rooms(peer_id: int) -> None:
+    bot_logger.info(f"List of duty rooms for {peer_id}")
     all_rooms = [room.room for room in DutyRooms.query.all()]
     left_rooms = sorted(filter(LEFT_ROOMS.__contains__, all_rooms))
     right_rooms = sorted(filter(RIGHT_ROOMS.__contains__, all_rooms))
@@ -118,6 +131,7 @@ def show_rooms(peer_id: int) -> None:
 
 
 def add_rooms(from_peer_id: int, date: datetime, *args) -> None:
+    bot_logger.info(f"Adding rooms {args} from {from_peer_id} at date {date}")
     current_left_room, current_right_room = get_duty_rooms(date)
     for room in args:
         db.session.merge(DutyRooms(room=room))
@@ -126,6 +140,7 @@ def add_rooms(from_peer_id: int, date: datetime, *args) -> None:
 
 
 def remove_rooms(from_peer_id: int, date: datetime, *args) -> None:
+    bot_logger.info(f"Removing rooms {args} from {from_peer_id} at date {date}")
     current_left_room, current_right_room = get_duty_rooms(date)
     db.session.query(DutyRooms).filter(DutyRooms.room.in_(args)).delete(synchronize_session="fetch")
     db.session.commit()
@@ -135,17 +150,22 @@ def remove_rooms(from_peer_id: int, date: datetime, *args) -> None:
     right_rooms = sorted(filter(RIGHT_ROOMS.__contains__, all_rooms))
 
     if current_left_room in args:
+        bot_logger.debug(f"{current_left_room} is duty today, changing")
         try:
             new_left_room = min(room for room in left_rooms if room > current_left_room)
         except ValueError:
             new_left_room = left_rooms[0]
+        bot_logger.debug(f"Changing duty left room to {new_left_room}")
         sync_rooms(date, from_peer_id, left_room=new_left_room)
 
     if current_right_room in args:
+        bot_logger.debug(f"{current_right_room} is duty today, changing")
         try:
             new_right_room = min(room for room in right_rooms if room > current_right_room)
         except ValueError:
             new_right_room = right_rooms[0]
+
+        bot_logger.debug(f"Changing duty right room to {new_right_room}")
         sync_rooms(date, from_peer_id, right_room=new_right_room)
 
 
