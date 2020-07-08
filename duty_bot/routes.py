@@ -1,5 +1,5 @@
 from flask import request, abort
-from duty_bot import app, GROUP_ID, bot_logger
+from duty_bot import app, GROUP_ID
 from duty_bot.credentials import CONFIRMATION_TOKEN6_6, VK_CALLBACK_SECRET6_6, WEBHOOK_SECRET
 from duty_bot.functions import handle_event, is_valid_signature
 import git
@@ -39,7 +39,7 @@ def github_webhook():
 @app.route("/6_6", methods=["POST"])
 def vk_callback():
     event = json.loads(request.data)
-    bot_logger.info(f"Got event {event}")
+    print({key: val for key, val in event.items() if key != "secret"})
     if any(key not in event for key in ("type", "group_id", "secret")):
         abort(404)
     if event["type"] == "confirmation" and event["group_id"] == GROUP_ID:
