@@ -48,8 +48,6 @@ MONTHS = {
 
 def send_text(message: str, peer_id: int, **kwargs) -> None:
     kwargs.update(random_id=random.getrandbits(64), keyboard=default_keyboard, message=message, peer_id=peer_id)
-    kwargs.pop("reply_to")
-    print(kwargs)
     vk_bot_session6_6.method("messages.send", kwargs)
 
 
@@ -163,7 +161,7 @@ def parse_message(message_obj: dict) -> Tuple[Callable, Tuple]:
             if last_request is None or (message_date - last_request).total_seconds() >= 3600:
                 return today, (
                     message_obj["peer_id"],
-                    message_obj.get("conversation_message_id") or message_obj["id"],
+                    message_obj["id"],
                     message_date
                 )
             else:
