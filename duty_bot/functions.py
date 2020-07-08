@@ -48,6 +48,7 @@ MONTHS = {
 
 def send_text(message: str, peer_id: int, **kwargs) -> None:
     kwargs.update(random_id=random.getrandbits(64), keyboard=default_keyboard, message=message, peer_id=peer_id)
+    print(kwargs)
     vk_bot_session6_6.method("messages.send", kwargs)
 
 
