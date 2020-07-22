@@ -9,6 +9,7 @@ from duty_bot import vk_bot_session6_6, db, GROUP_ID, OWNERS6_6
 from duty_bot.models import LastRequests, SyncTable, DutyRooms
 import hmac
 import hashlib
+import logging
 
 LEFT_ROOMS = tuple(range(601, 620))
 RIGHT_ROOMS = tuple(range(620, 639))
@@ -126,21 +127,27 @@ def add_rooms(from_peer_id: int, date: datetime, *args) -> None:
 
 
 def remove_rooms(from_peer_id: int, date: datetime, *args) -> None:
+    logging.debug(f"Removing rooms {args}, dt={date}, peer_d={from_peer_id}")
+
     current_left_room, current_right_room = get_duty_rooms(date)
+    logging.debug(f"Duty rooms at {date} is {current_left_room} and {current_right_room}")
 
     db.session.query(DutyRooms).filter(DutyRooms.room.in_(args)).delete(synchronize_session="fetch")
     db.session.commit()
 
-    if current_right_room in args or current_right_room in args:
+    if current_left_room in args or current_right_room in args:
         all_rooms = [row.room for row in DutyRooms.query.all()]
         left_rooms = sorted(filter(LEFT_ROOMS.__contains__, all_rooms))
         right_rooms = sorted(filter(RIGHT_ROOMS.__contains__, all_rooms))
+        logging.debug(f"Left duty rooms at {date}: {left_rooms}")
+        logging.debug(f"Right duty rooms at {date}: {right_rooms}")
 
         if current_left_room in args:
             try:
                 new_left_room = min(room for room in left_rooms if room > current_left_room)
             except ValueError:
                 new_left_room = left_rooms[0]
+            logging.debug(f"New left room is {new_left_room}")
         else:
             new_left_room = None
 
@@ -149,9 +156,11 @@ def remove_rooms(from_peer_id: int, date: datetime, *args) -> None:
                 new_right_room = min(room for room in right_rooms if room > current_right_room)
             except ValueError:
                 new_right_room = right_rooms[0]
+            logging.debug(f"New right room is {new_right_room}")
         else:
             new_right_room = None
 
+        logging.debug(f"Sync left_room={new_left_room}, right_room={new_right_room} at {date} from {from_peer_id}")
         sync_rooms(date, from_peer_id, left_room=new_left_room, right_room=new_right_room)
 
 
