@@ -10,9 +10,9 @@ from duty_bot.models import LastRequests, SyncTable, DutyRooms
 import hmac
 import hashlib
 
-ALL_ROOMS = tuple(range(601, 639))
 LEFT_ROOMS = tuple(range(601, 620))
 RIGHT_ROOMS = tuple(range(620, 639))
+ALL_ROOMS = LEFT_ROOMS + RIGHT_ROOMS
 
 default_keyboard = VkKeyboard(one_time=False)
 default_keyboard.add_button(label="Кто дежурит сегодня", color=VkKeyboardColor.POSITIVE, payload={"command": "main"})
@@ -69,7 +69,7 @@ def get_duty_rooms(date: datetime) -> Tuple[int, int]:
     sync_left_room = sync_info.left_room
     sync_right_room = sync_info.right_room
     offset = (date - sync_date).days
-    all_rooms = [room.room for room in DutyRooms.query.all()]
+    all_rooms = [row.room for row in DutyRooms.query.all()]
     left_rooms = sorted(filter(LEFT_ROOMS.__contains__, all_rooms))
     right_rooms = sorted(filter(RIGHT_ROOMS.__contains__, all_rooms))
     left_room_index = left_rooms.index(sync_left_room)
@@ -107,7 +107,7 @@ def today(peer_id: int, reply_to: int, today_date: datetime) -> None:
 
 
 def show_rooms(peer_id: int) -> None:
-    all_rooms = [room.room for room in DutyRooms.query.all()]
+    all_rooms = [row.room for row in DutyRooms.query.all()]
     left_rooms = sorted(filter(LEFT_ROOMS.__contains__, all_rooms))
     right_rooms = sorted(filter(RIGHT_ROOMS.__contains__, all_rooms))
     msg = "Дежурящие комнаты:\n"
@@ -127,26 +127,32 @@ def add_rooms(from_peer_id: int, date: datetime, *args) -> None:
 
 def remove_rooms(from_peer_id: int, date: datetime, *args) -> None:
     current_left_room, current_right_room = get_duty_rooms(date)
+
     db.session.query(DutyRooms).filter(DutyRooms.room.in_(args)).delete(synchronize_session="fetch")
     db.session.commit()
 
-    all_rooms = [room.room for room in DutyRooms.query.all()]
-    left_rooms = sorted(filter(LEFT_ROOMS.__contains__, all_rooms))
-    right_rooms = sorted(filter(RIGHT_ROOMS.__contains__, all_rooms))
+    if current_right_room in args or current_right_room in args:
+        all_rooms = [row.room for row in DutyRooms.query.all()]
+        left_rooms = sorted(filter(LEFT_ROOMS.__contains__, all_rooms))
+        right_rooms = sorted(filter(RIGHT_ROOMS.__contains__, all_rooms))
 
-    if current_left_room in args:
-        try:
-            new_left_room = min(room for room in left_rooms if room > current_left_room)
-        except ValueError:
-            new_left_room = left_rooms[0]
-        sync_rooms(date, from_peer_id, left_room=new_left_room)
+        if current_left_room in args:
+            try:
+                new_left_room = min(room for room in left_rooms if room > current_left_room)
+            except ValueError:
+                new_left_room = left_rooms[0]
+        else:
+            new_left_room = None
 
-    if current_right_room in args:
-        try:
-            new_right_room = min(room for room in right_rooms if room > current_right_room)
-        except ValueError:
-            new_right_room = right_rooms[0]
-        sync_rooms(date, from_peer_id, right_room=new_right_room)
+        if current_right_room in args:
+            try:
+                new_right_room = min(room for room in right_rooms if room > current_right_room)
+            except ValueError:
+                new_right_room = right_rooms[0]
+        else:
+            new_right_room = None
+
+        sync_rooms(date, from_peer_id, left_room=new_left_room, right_room=new_right_room)
 
 
 def parse_message(message_obj: dict) -> Tuple[Callable, Tuple]:
