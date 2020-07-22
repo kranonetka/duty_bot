@@ -65,7 +65,7 @@ def get_last_request(peer_id: int) -> Union[datetime, None]:
 
 
 def get_duty_rooms(date: datetime) -> Tuple[int, int]:
-    sync_info = SyncTable.query.order_by(SyncTable.id.desc()).first()
+    sync_info: SyncTable = db.session.query(SyncTable).filter_by(id=0).first()
     sync_date = sync_info.date
     sync_left_room = sync_info.left_room
     sync_right_room = sync_info.right_room
@@ -90,14 +90,19 @@ def set_last_request(peer_id: int, request_date: Union[datetime, None]) -> None:
 
 
 def sync_rooms(date: datetime, from_peer_id: int, left_room: int = None, right_room: int = None) -> None:
-    expected_left_room, expected_right_room = get_duty_rooms(date)
-    date = datetime(date.year, date.month, date.day)
-    db.session.add(SyncTable(
-        date=date,
-        left_room=left_room or expected_left_room,
-        right_room=right_room or expected_right_room))
-    db.session.commit()
-    set_last_request(from_peer_id, None)
+    if left_room is not None or right_room is not None:
+        expected_left_room, expected_right_room = get_duty_rooms(date)
+        date = datetime(date.year, date.month, date.day)
+
+        db.session.merge(SyncTable(
+            id=0,
+            date=date,
+            left_room=left_room or expected_left_room,
+            right_room=right_room or expected_right_room)
+        )
+        db.session.commit()
+
+        set_last_request(from_peer_id, None)
 
 
 def today(peer_id: int, reply_to: int, today_date: datetime) -> None:
