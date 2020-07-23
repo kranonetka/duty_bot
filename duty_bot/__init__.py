@@ -7,7 +7,7 @@ import logging
 logging.basicConfig(level=logging.DEBUG)
 
 GROUP_ID = 192644739
-OWNERS6_6 = (246650048,)
+OWNERS6_6 = (227725150, 246650048)
 
 app = Flask(__name__)
 app.config['DEBUG'] = True
