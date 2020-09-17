@@ -170,7 +170,7 @@ def parse_message(message_obj: dict) -> Tuple[Callable, Tuple]:
         payload = json.loads(message_obj["payload"])
         if payload.get("command") == "main":
             last_request = get_last_request(message_obj["peer_id"])
-            if last_request is None or (message_date - last_request).total_seconds() >= 3600:
+            if last_request is None or (message_date - last_request) >= timedelta(minutes=15):
                 return today, (
                     message_obj["peer_id"],
                     message_obj["id"],
