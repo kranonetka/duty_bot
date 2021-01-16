@@ -22,18 +22,20 @@ def github_webhook():
         event = request.headers.get('X-GitHub-Event')
 
         if event == "ping":
-            return json.dumps({'msg': 'Hi!'})
+            response = json.dumps({'msg': 'Hi!'})
         elif event == "push":
             repo = git.Repo('.')
             origin = repo.remotes.origin
             pull_info = origin.pull()
-
-            if len(pull_info) == 0:
-                return json.dumps({'msg': "Didn't pull any information from remote!"})
-            if pull_info[0].flags > 128:
-                return json.dumps({'msg': "Didn't pull any information from remote!"})
-            commit_hash = pull_info[0].commit.hexsha
-            return f'Updated PythonAnywhere server to commit {commit_hash}'
+    
+            if len(pull_info) == 0 or pull_info[0].flags > 128:
+                response = json.dumps({'msg': "Didn't pull any information from remote!"})
+            else:
+                commit_hash = pull_info[0].commit.hexsha
+                response = f'Updated PythonAnywhere server to commit {commit_hash}'
+        else:
+            response = f'Unsupported event type: {event}'
+        return response
     else:
         abort(404)
 
