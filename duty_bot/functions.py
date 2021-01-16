@@ -108,7 +108,7 @@ def sync_rooms(date: datetime, from_peer_id: int, left_room: int = None, right_r
 
 def today(peer_id: int, reply_to: int, today_date: datetime) -> None:
     left_room, right_room = get_duty_rooms(today_date)
-    msg = "‼ Сегодня дежурят {} и {}".format(left_room, right_room)
+    msg = "‼ Сегодня дежурят {} и {} ‼".format(left_room, right_room)
     send_text(msg, peer_id, reply_to=reply_to)
     set_last_request(peer_id, today_date)
 
@@ -117,7 +117,7 @@ def show_rooms(peer_id: int) -> None:
     all_rooms = [row.room for row in DutyRooms.query.all()]
     left_rooms = sorted(filter(LEFT_ROOMS.__contains__, all_rooms))
     right_rooms = sorted(filter(RIGHT_ROOMS.__contains__, all_rooms))
-    msg = "Дежурящие комнаты:\n"
+    msg = "📋 Дежурящие комнаты:\n"
     msg += "\n".join(
         f"| {left:^3} | {right:^3} |"
         for left, right in zip_longest(left_rooms, right_rooms, fillvalue="___"))
@@ -130,6 +130,8 @@ def add_rooms(from_peer_id: int, date: datetime, *args) -> None:
         db.session.merge(DutyRooms(room=room))
     sync_rooms(date, from_peer_id, left_room=current_left_room, right_room=current_right_room)
     db.session.commit()
+    msg = '✅ Добавлены комнаты: ' + ','.join(map(str, args))
+    send_text(msg, from_peer_id)
 
 
 def remove_rooms(from_peer_id: int, date: datetime, *args) -> None:
@@ -160,6 +162,9 @@ def remove_rooms(from_peer_id: int, date: datetime, *args) -> None:
 
     db.session.query(DutyRooms).filter(DutyRooms.room.in_(args)).delete(synchronize_session="fetch")
     db.session.commit()
+
+    msg = '❎ Убраны комнаты: ' + ','.join(map(str, args))
+    send_text(msg, from_peer_id)
 
 
 def parse_message(message_obj: dict) -> Tuple[Callable, Tuple]:
