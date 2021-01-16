@@ -1,8 +1,10 @@
+import logging
+
+import vk_api
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
+
 from duty_bot.credentials import DB_FILE, VK_API_TOKEN6_6
-import vk_api
-import logging
 
 logging.basicConfig(level=logging.DEBUG)
 

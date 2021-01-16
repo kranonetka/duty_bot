@@ -1,9 +1,11 @@
+import json
+
+import git
 from flask import request, abort
+
 from duty_bot import app, GROUP_ID
 from duty_bot.credentials import CONFIRMATION_TOKEN6_6, VK_CALLBACK_SECRET6_6, WEBHOOK_SECRET
 from duty_bot.functions import handle_event, is_valid_signature
-import git
-import json
 
 
 @app.route("/", methods=["GET"])

@@ -1,15 +1,16 @@
-from typing import Tuple, Callable, Union
-from itertools import zip_longest
-import re
-import random
-from datetime import datetime, timedelta
-from vk_api.keyboard import VkKeyboard, VkKeyboardColor
+import hashlib
+import hmac
 import json
+import random
+import re
+from datetime import datetime, timedelta
+from itertools import zip_longest
+from typing import Tuple, Callable, Union
+
+from vk_api.keyboard import VkKeyboard, VkKeyboardColor
+
 from duty_bot import vk_bot_session6_6, db, GROUP_ID, OWNERS6_6
 from duty_bot.models import LastRequests, SyncTable, DutyRooms
-import hmac
-import hashlib
-import logging
 
 LEFT_ROOMS = tuple(range(601, 620))
 RIGHT_ROOMS = tuple(range(620, 639))
@@ -196,7 +197,7 @@ def parse_message(message_obj: dict) -> Tuple[Callable, Tuple]:
                 dest_date.day,
                 MONTHS[dest_date.month],
                 WEEK_DAYS[dest_date.strftime("%a")] if offset > 0 else "Сегодня"
-                )
+            )
         else:
             msg = f"{target_room} комнаты нет среди дежурящих на 6-ом этаже"
         return send_text, (msg, message_obj["peer_id"])
