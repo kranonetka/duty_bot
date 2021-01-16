@@ -108,7 +108,7 @@ def sync_rooms(date: datetime, from_peer_id: int, left_room: int = None, right_r
 
 def today(peer_id: int, reply_to: int, today_date: datetime) -> None:
     left_room, right_room = get_duty_rooms(today_date)
-    msg = "Сегодня дежурят {} и {}".format(left_room, right_room)
+    msg = "‼ Сегодня дежурят {} и {}".format(left_room, right_room)
     send_text(msg, peer_id, reply_to=reply_to)
     set_last_request(peer_id, today_date)
 
