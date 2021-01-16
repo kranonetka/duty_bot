@@ -1,7 +1,8 @@
+import os
+from datetime import datetime
+
 from duty_bot import db, DB_FILE
 from duty_bot.models import SyncTable, DutyRooms
-from datetime import datetime
-import os
 
 if __name__ == "__main__":
     if not os.path.isfile("duty_bot/" + DB_FILE):

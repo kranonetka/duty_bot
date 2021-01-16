@@ -20,4 +20,4 @@ db = SQLAlchemy(app)
 
 vk_bot_session6_6 = vk_api.VkApi(token=VK_API_TOKEN6_6, api_version="5.103")
 
-from duty_bot import routes  # noqa: E402
+from duty_bot import routes  # noqa: F401,E402

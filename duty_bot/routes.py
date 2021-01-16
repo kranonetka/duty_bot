@@ -27,7 +27,7 @@ def github_webhook():
             repo = git.Repo('.')
             origin = repo.remotes.origin
             pull_info = origin.pull()
-    
+
             if len(pull_info) == 0 or pull_info[0].flags > 128:
                 response = json.dumps({'msg': "Didn't pull any information from remote!"})
             else:
