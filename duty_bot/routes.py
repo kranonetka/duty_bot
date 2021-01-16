@@ -24,7 +24,7 @@ def github_webhook():
         if event == "ping":
             return json.dumps({'msg': 'Hi!'})
         elif event == "push":
-            repo = git.Repo('/home/SixthDormitory/duty_bot')
+            repo = git.Repo('.')
             origin = repo.remotes.origin
             pull_info = origin.pull()
 
