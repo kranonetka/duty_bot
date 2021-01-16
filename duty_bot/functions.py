@@ -143,18 +143,12 @@ def remove_rooms(from_peer_id: int, date: datetime, *args) -> None:
         right_rooms = sorted(filter(RIGHT_ROOMS.__contains__, all_rooms))
 
         if current_left_room in args:
-            try:
-                new_left_room = min(room for room in left_rooms if room > current_left_room)
-            except ValueError:
-                new_left_room = left_rooms[0]
+            new_left_room = min((room for room in left_rooms if room > current_left_room), default=left_rooms[0])
         else:
             new_left_room = None
 
         if current_right_room in args:
-            try:
-                new_right_room = min(room for room in right_rooms if room > current_right_room)
-            except ValueError:
-                new_right_room = right_rooms[0]
+            new_right_room = min((room for room in right_rooms if room > current_right_room), default=right_rooms[0])
         else:
             new_right_room = None
 
