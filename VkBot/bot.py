@@ -13,17 +13,17 @@ if False:  # Type hinting
 
 
 class Bot:
-    ADMINS = {227725150, 138443566, 299443070}
-    LEFT_ROOMS = tuple(range(601, 620))
-    RIGHT_ROOMS = tuple(range(620, 639))
+    ADMINS = {227725150, 138443566, 299443070}  # TODO: Должно быть задано в конструкторе
+    LEFT_ROOMS = tuple(range(601, 620))  # TODO: Должно быть задано в конструкторе
+    RIGHT_ROOMS = tuple(range(620, 639))  # TODO: Должно быть задано в конструкторе
     ALL_ROOMS = LEFT_ROOMS + RIGHT_ROOMS
 
     def __init__(
             self,
-            access_token: str,
+            access_token,
             admins=(),
             api_version='5.103'
-    ):
+    ):  # type: (str, Sequence[int], str) -> None
         self._admins = admins
         self._session = vk_api.VkApi(token=access_token, api_version=api_version)
         self._default_keyboard = self._get_keyboard()
@@ -32,12 +32,11 @@ class Bot:
         self._fill_rooms_if_empty()
         self._check_sync()
 
-    def show_list(self, peer_id):
+    def show_list(self, peer_id):  # type: (int) -> None
         msg = self._build_rooms_list_msg()
-
         self._send_text(msg, peer_id)
 
-    def help(self, peer_id):
+    def help(self, peer_id):  # type: (int) -> None
         msg = '❓ Команды:\n' \
               '🔸 Когда <комната> -- получить примерную дату, когда дежурит определённая комната\n' \
               '🔸 <комната> -- установить, что комната дежурит сегодня\n' \
@@ -64,6 +63,9 @@ class Bot:
             self._add_rooms(rooms_to_add)
             msg = '✅ Добавлены комнаты: ' + ', '.join(map(str, rooms))
             self._send_text(msg, peer_id)
+
+    def is_bot_group(self, id):  # type: (int) -> bool
+        return id == self._group_id
 
     def _add_rooms(self, rooms):  # type: (Sequence[int]) -> None
         with self._db_context.session() as session:  # type: Session
@@ -114,10 +116,7 @@ class Bot:
         right_idx = (right_idx + offset) % len(right_rooms)
         return left_rooms[left_idx], right_rooms[right_idx]
 
-    def is_bot_group(self, id):  # type: (int) -> bool
-        return id == self._group_id
-
-    def _get_side_splitted_rooms(self):
+    def _get_side_splitted_rooms(self):  # type: () -> Tuple[Tuple[int], Tuple[int]]
         all_rooms = self._get_all_duty_rooms()
         return self._split_rooms_by_side(all_rooms)
 
@@ -132,7 +131,7 @@ class Bot:
 
         return left_rooms, right_rooms
 
-    def _get_keyboard(self):
+    def _get_keyboard(self):  # type: () -> str
         keyboard = VkKeyboard(one_time=False)
         keyboard.add_button(
             label='Кто дежурит сегодня',
