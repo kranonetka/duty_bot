@@ -8,7 +8,18 @@ class CommandParser(NodeVisitor):
     grammar = commands_grammar
 
     def visit_command(self, node: Node, visited_children: list):
-        return visited_children[1][0]
+        retval: dict = visited_children[1][0]
+
+        if not isinstance(prefix := visited_children[0], Node):  # if present
+            retval['mention'] = prefix[0][0]
+
+        return retval
+
+    def visit_mention(self, node: Node, visited_children: list):
+        return {'type': node.children[1].text, 'id': visited_children[2]}
+
+    def visit_id(self, node: Node, visited_children: list):
+        return int(node.text)
 
     def visit_show_list(self, node: Node, visited_children: list):
         return {'action': ActionsEnum.SHOW_LIST}

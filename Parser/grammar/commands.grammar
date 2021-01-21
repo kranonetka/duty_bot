@@ -1,5 +1,7 @@
 command         = (mention comma? ws)? (get_duty_date / set_room / add_rooms / remove_rooms / show_list / help)
-mention         = lpar 'club192644739' mention_delim mention_alias rpar
+mention         = lpar member_type id mention_delim mention_alias rpar
+member_type     = 'club' / 'id'
+id              = digit+
 get_duty_date   = 'когда' ws+ int
 set_room        = int gap
 add_rooms       = plus room_set
