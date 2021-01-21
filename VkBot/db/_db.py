@@ -30,8 +30,9 @@ class SyncTable(Base):
 
 
 class DBContext:
-    def __init__(self):
-        engine = create_engine('sqlite:///app_db.sqlite', echo=True)
+    def __init__(self, context_name):  # type: (str) -> None
+        engine = create_engine(f'sqlite:///{context_name}.sqlite', echo=True)
+
         Base.metadata.create_all(engine)
 
         self._SessionMaker = sessionmaker(bind=engine)
@@ -47,6 +48,3 @@ class DBContext:
             raise
         finally:
             session.close()
-
-
-db_context = DBContext()
