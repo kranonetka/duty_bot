@@ -1,1 +1,1 @@
-from .db import DutyRoom, LastRequest, SyncTable, db_context
+from .db import DutyRooms, LastRequests, SyncTable, db_context

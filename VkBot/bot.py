@@ -4,7 +4,7 @@ from itertools import zip_longest
 import vk_api
 from vk_api.keyboard import VkKeyboard, VkKeyboardColor
 
-from .db import db_context, DutyRoom
+from .db import db_context, DutyRooms
 
 if False:  # Type hinting
     from sqlalchemy.orm import Session  # noqa
@@ -57,7 +57,7 @@ class Bot:
 
     def _get_all_duty_rooms(self):
         with db_context.session() as session:  # type: Session
-            rooms = session.query(DutyRoom).order_by(DutyRoom.room).all()
+            rooms = session.query(DutyRooms).order_by(DutyRooms.room).all()
             return [room.room for room in rooms]
 
     def _get_keyboard(self):

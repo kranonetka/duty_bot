@@ -1,6 +1,6 @@
 from contextlib import contextmanager
 
-from sqlalchemy import create_engine, Column, Integer, DateTime
+from sqlalchemy import create_engine, Column, Integer, DateTime, Date
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
@@ -10,21 +10,21 @@ if False:  # Type hinting
 Base = declarative_base()
 
 
-class LastRequest(Base):
-    __tablename__ = 'LastRequest'
+class LastRequests(Base):
+    __tablename__ = 'LastRequests'
     peer_id = Column(Integer, primary_key=True, nullable=False)
     request_date = Column(DateTime, nullable=True)
 
 
-class DutyRoom(Base):
-    __tablename__ = 'DutyRoom'
+class DutyRooms(Base):
+    __tablename__ = 'DutyRooms'
     room = Column(Integer, primary_key=True)
 
 
 class SyncTable(Base):
     __tablename__ = 'SyncTable'
     id = Column(Integer, primary_key=True)
-    date = Column(DateTime, nullable=False)
+    date = Column(Date, nullable=False)
     left_room = Column(Integer, nullable=False)
     right_room = Column(Integer, nullable=False)
 
