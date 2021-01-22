@@ -1,20 +1,28 @@
 from parsimonious.nodes import Node, NodeVisitor
 
-from ._actions import ActionsEnum
+from ._commands import RemoveRoomsCommand, AddRoomsCommand, ShowListCommand, SetRoomCommand, NotifyTodayCommand, \
+    GetDutyDateCommand
 from ._grammar import message_grammar
 from ._mention import Mention
+from ._message import Message
 
 
 class MessageParser(NodeVisitor):
     grammar = message_grammar
 
-    def visit_msg(self, node: Node, visited_children: list):
-        retval: dict = visited_children[1]
+    def parse(self, text, pos=0):
+        """
+        :rtype: Message
+        """
+        return super(MessageParser, self).parse(text, pos)
+
+    def visit_message(self, node: Node, visited_children: list):
+        message = Message(visited_children[1])
 
         if not isinstance(prefix := visited_children[0], Node):  # if present
-            retval['mention'] = prefix[0][0]
+            message._mention = prefix[0][0]
 
-        return retval
+        return message
 
     def visit_command(self, node: Node, visited_children: list):
         return visited_children[0]
@@ -29,16 +37,22 @@ class MessageParser(NodeVisitor):
         return int(node.text)
 
     def visit_show_list(self, node: Node, visited_children: list):
-        return {'action': ActionsEnum.SHOW_LIST}
+        return ShowListCommand()
 
     def visit_notify_today(self, node: Node, visited_children: list):
-        return {'action': ActionsEnum.NOTIFY_TODAY}
+        return NotifyTodayCommand()
 
     def visit_add_rooms(self, node: Node, visited_children: list):
-        return {'action': ActionsEnum.ADD_ROOMS, 'rooms': visited_children[1]}
+        return AddRoomsCommand(visited_children[1])
 
     def visit_remove_rooms(self, node: Node, visited_children: list):
-        return {'action': ActionsEnum.REMOVE_ROOMS, 'rooms': visited_children[1]}
+        return RemoveRoomsCommand(visited_children[1])
+
+    def visit_set_room(self, node: Node, visited_children: list):
+        return SetRoomCommand(visited_children[0])
+
+    def visit_get_duty_date(self, node: Node, visited_children: list):
+        return GetDutyDateCommand(visited_children[-1])
 
     def visit_room_set(self, node: Node, visited_children: list):
         room_set: set = visited_children[0]
@@ -57,18 +71,6 @@ class MessageParser(NodeVisitor):
 
     def visit_single_room(self, node: Node, visited_children: list):
         return {visited_children[0]}
-
-    def visit_set_room(self, node: Node, visited_children: list):
-        return {
-            'action': ActionsEnum.SET_ROOM,
-            'room': visited_children[0]
-        }
-
-    def visit_get_duty_date(self, node: Node, visited_children: list):
-        return {
-            'action': ActionsEnum.GET_DUTY_DATE,
-            'room': visited_children[-1]
-        }
 
     def visit_int(self, node: Node, visited_children: list):
         return int(node.text)
