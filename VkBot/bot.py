@@ -13,18 +13,20 @@ if False:  # Type hinting
 
 
 class Bot:
-    ADMINS = {227725150, 138443566, 299443070}  # TODO: Должно быть задано в конструкторе
-    LEFT_ROOMS = tuple(range(601, 620))  # TODO: Должно быть задано в конструкторе
-    RIGHT_ROOMS = tuple(range(620, 639))  # TODO: Должно быть задано в конструкторе
-    ALL_ROOMS = LEFT_ROOMS + RIGHT_ROOMS
-
     def __init__(
             self,
             access_token,
             admins=(),
+            left_rooms=tuple(range(601, 620)),
+            right_rooms=tuple(range(620, 639)),
             api_version='5.103'
-    ):  # type: (str, Sequence[int], str) -> None
+    ):  # type: (str, Tuple[int], Tuple[int], Tuple[int], str) -> None
         self._admins = admins
+
+        self._available_left_rooms = left_rooms
+        self._available_right_rooms = right_rooms
+        self._available_rooms = left_rooms + right_rooms
+
         self._session = vk_api.VkApi(token=access_token, api_version=api_version)
         self._default_keyboard = self._get_keyboard()
         self._group_id = self._get_group_id()
@@ -67,12 +69,15 @@ class Bot:
     def is_bot_group(self, id):  # type: (int) -> bool
         return id == self._group_id
 
+    def is_admin(self, id):  # type: (int) -> bool
+        return id in self._admins
+
     def _add_rooms(self, rooms):  # type: (Sequence[int]) -> None
         with self._db_context.session() as session:  # type: Session
             session.add_all(DutyRooms(room=room) for room in rooms)
 
     def _filter_adding_rooms(self, duty_rooms):  # type: (Sequence[int]) -> Tuple[int]
-        rooms = tuple(filter(self.ALL_ROOMS.__contains__, duty_rooms))
+        rooms = tuple(filter(self._available_rooms.__contains__, duty_rooms))
         if rooms:
             duty_rooms = self._get_all_duty_rooms()
             return tuple(filterfalse(duty_rooms.__contains__, rooms))
@@ -126,8 +131,8 @@ class Bot:
             return tuple(room.room for room in rooms)
 
     def _split_rooms_by_side(self, rooms):  # type: (Sequence[int]) -> Tuple[Tuple[int], Tuple[int]]
-        left_rooms = tuple(filter(self.LEFT_ROOMS.__contains__, rooms))
-        right_rooms = tuple(filter(self.RIGHT_ROOMS.__contains__, rooms))
+        left_rooms = tuple(filter(self._available_left_rooms.__contains__, rooms))
+        right_rooms = tuple(filter(self._available_right_rooms.__contains__, rooms))
 
         return left_rooms, right_rooms
 
@@ -145,7 +150,7 @@ class Bot:
     def _fill_rooms_if_empty(self):
         with self._db_context.session() as session:  # type: Session
             if not session.query(DutyRooms).count():
-                session.add_all(DutyRooms(room=room) for room in self.ALL_ROOMS)
+                session.add_all(DutyRooms(room=room) for room in self._available_rooms)
 
     def _check_sync(self):
         with self._db_context.session() as session:  # type: Session
