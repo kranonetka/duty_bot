@@ -6,11 +6,11 @@ import pytz
 import vk_api
 from vk_api.keyboard import VkKeyboard, VkKeyboardColor
 
-from .db import DBContext, DutyRooms, SyncTable
+from .db import DBContext, DutyRooms, SyncTable, LastRequests
 
 if False:  # Type hinting
     from sqlalchemy.orm import Session  # noqa
-    from typing import Tuple, Sequence  # noqa
+    from typing import Tuple, Sequence, Optional  # noqa
 
 WEEK_DAYS_MAPPING = {
     0: "Понедельник",
@@ -45,9 +45,22 @@ class Bot:
             admins=(),
             left_rooms=tuple(range(601, 620)),
             right_rooms=tuple(range(620, 639)),
+            today_notification_timeout=datetime.timedelta(minutes=15),
+            tz=pytz.timezone('Asia/Tomsk'),
             api_version='5.103'
-    ):  # type: (str, Tuple[int, ...], Tuple[int, ...], Tuple[int, ...], str) -> None
+    ):
+        """
+        :type access_token: str
+        :type admins: Tuple[int, ...]
+        :param left_rooms: Tuple[int, ...]
+        :param right_rooms: Tuple[int, ...]
+        :param today_notification_timeout: datetime.timedelta
+        :param tz: datetime.tzinfo
+        :param api_version: str
+        """
         self._admins = admins
+        self._timeout = today_notification_timeout
+        self._tz = tz
 
         self._available_left_rooms = left_rooms
         self._available_right_rooms = right_rooms
@@ -110,16 +123,48 @@ class Bot:
         self._send_text(msg, peer_id)
 
     def show_today_rooms(self, peer_id):  # type: (int) -> None
-        today = self.get_today_date()
-        left_room, right_room = self._get_duty_rooms_for_date(today)
-        msg = f'‼ Сегодня дежурят {left_room} и {right_room}'
-        self._send_text(msg, peer_id)
+        if self._is_timeout_exceeded(peer_id):
+            today = self.get_today_date()
+            left_room, right_room = self._get_duty_rooms_for_date(today)
+            self._update_timeout(peer_id)
+            msg = f'‼ Сегодня дежурят {left_room} и {right_room}'
+            self._send_text(msg, peer_id)
 
     def is_bot_group(self, id):  # type: (int) -> bool
         return id == self._group_id
 
     def is_admin(self, id):  # type: (int) -> bool
         return id in self._admins
+
+    def get_today_date(self):  # type: () -> datetime.date
+        return self.get_now_datetime().date()
+
+    def get_now_datetime(self):  # type: () -> datetime.datetime
+        return datetime.datetime.now(tz=self._tz)
+
+    def _update_timeout(self, peer_id):  # type: (int) -> None
+        now = self.get_now_datetime()
+        with self._db_context.session() as session:  # type: Session
+            session.merge(LastRequests(peer_id=peer_id, request_date=now))
+
+    def _is_timeout_exceeded(self, peer_id):  # type: (int) -> bool
+        last_request = self._get_last_request_dt(peer_id)
+        if last_request is None:
+            return True
+
+        now = self.get_now_datetime()
+        now = now.replace(tzinfo=None)  # For subtracting
+        if (now - last_request) > self._timeout:
+            return True
+        return False
+
+    def _get_last_request_dt(self, peer_id):
+        with self._db_context.session() as session:  # type: Session
+            last_req = session.query(LastRequests). \
+                filter(LastRequests.peer_id == peer_id). \
+                first()  # type: Optional[LastRequests]
+            if last_req is not None:
+                return last_req.request_date
 
     def _get_duty_date(self, room):  # type: (int) -> datetime.date
         today = self.get_today_date()
@@ -197,10 +242,6 @@ class Bot:
             session.query(DutyRooms). \
                 filter(DutyRooms.room.in_(rooms)). \
                 delete(synchronize_session='fetch')
-
-    def get_today_date(self):  # type: () -> datetime.date
-        dt = datetime.datetime.now(tz=pytz.timezone('Asia/Tomsk'))
-        return dt.date()
 
     def _add_rooms(self, rooms):  # type: (Sequence[int]) -> None
         with self._db_context.session() as session:  # type: Session
