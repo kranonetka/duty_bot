@@ -2,6 +2,7 @@ import datetime
 import random
 from itertools import zip_longest, filterfalse
 
+import pytz
 import vk_api
 from vk_api.keyboard import VkKeyboard, VkKeyboardColor
 
@@ -66,21 +67,76 @@ class Bot:
             msg = '✅ Добавлены комнаты: ' + ', '.join(map(str, rooms))
             self._send_text(msg, peer_id)
 
+    def remove_rooms(self, peer_id, rooms):  # type: (int, Sequence[int]) -> None
+        rooms = self._filter_removing_rooms(rooms)
+        if rooms:
+            self._check_today_rooms(rooms)
+            self._remove_rooms(rooms)
+
+    def show_today_rooms(self, peer_id):  # type: (int) -> None
+        today = self.get_today_date()
+        left_room, right_room = self._get_duty_rooms_for_date(today)
+        msg = f'Сегодня дежурят {left_room} и {right_room}'
+        self._send_text(msg, peer_id)
+
     def is_bot_group(self, id):  # type: (int) -> bool
         return id == self._group_id
 
     def is_admin(self, id):  # type: (int) -> bool
         return id in self._admins
 
+    def _check_today_rooms(self, rooms):  # type: (Sequence[ont]) -> None
+        today_date = self.get_today_date()
+        left_room, right_room = self._get_duty_rooms_for_date(today_date)
+        if left_room in rooms or right_room in rooms:
+            left_rooms, right_rooms = self._get_side_splitted_rooms()
+
+            left_rooms = tuple(filterfalse(rooms.__contains__, left_rooms))
+            right_rooms = tuple(filterfalse(rooms.__contains__, right_rooms))
+
+            new_left_room = min(
+                (room for room in left_rooms if room >= left_room),
+                default=left_rooms[0]
+            )
+
+            new_right_room = min(
+                (room for room in right_rooms if room >= right_room),
+                default=right_rooms[0]
+            )
+
+            with self._db_context.session() as session:  # type: Session
+                session.merge(
+                    SyncTable(
+                        id=0,
+                        date=today_date,
+                        left_room=new_left_room,
+                        right_room=new_right_room
+                    )
+                )
+
+    def _remove_rooms(self, rooms):  # type: (Sequence[int]) -> None
+        with self._db_context.session() as session:  # type: Session
+            session.query(DutyRooms).filter(DutyRooms.room.in_(rooms)).delete()
+
+    def get_today_date(self):  # type: () -> datetime.date
+        dt = datetime.datetime.now(tz=pytz.timezone('Asia/Tomsk'))
+        return dt.date()
+
     def _add_rooms(self, rooms):  # type: (Sequence[int]) -> None
         with self._db_context.session() as session:  # type: Session
             session.add_all(DutyRooms(room=room) for room in rooms)
 
-    def _filter_adding_rooms(self, duty_rooms):  # type: (Sequence[int]) -> Tuple[int]
-        rooms = tuple(filter(self._available_rooms.__contains__, duty_rooms))
-        if rooms:
+    def _filter_adding_rooms(self, rooms):  # type: (Sequence[int]) -> Tuple[int]
+        allowed_rooms = tuple(filter(self._available_rooms.__contains__, rooms))
+        if allowed_rooms:
             duty_rooms = self._get_all_duty_rooms()
-            return tuple(filterfalse(duty_rooms.__contains__, rooms))
+            return tuple(filterfalse(duty_rooms.__contains__, allowed_rooms))
+
+    def _filter_removing_rooms(self, rooms):  # type: (Sequence[int]) -> Tuple[int]
+        allowed_rooms = tuple(filter(self._available_rooms.__contains__, rooms))
+        if allowed_rooms:
+            duty_rooms = self._get_all_duty_rooms()
+            return tuple(filter(duty_rooms.__contains__, allowed_rooms))
 
     def _update_sync_table(self, room, date, current_rooms):  # type: (int, datetime.date, Sequence[int]) -> None
         left_rooms, right_rooms = self._split_rooms_by_side(current_rooms)
