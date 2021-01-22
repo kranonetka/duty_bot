@@ -12,6 +12,31 @@ if False:  # Type hinting
     from sqlalchemy.orm import Session  # noqa
     from typing import Tuple, Sequence  # noqa
 
+WEEK_DAYS_MAPPING = {
+    0: "Понедельник",
+    1: "Вторник",
+    2: "Среда",
+    3: "Четверг",
+    4: "Пятница",
+    5: "Суббота",
+    6: "Воскресенье"
+}
+
+MONTHS_MAPPING = {
+    1: "января",
+    2: "февраля",
+    3: "марта",
+    4: "апреля",
+    5: "мая",
+    6: "июня",
+    7: "июля",
+    8: "августа",
+    9: "сентября",
+    10: "октября",
+    11: "ноября",
+    12: "декабря"
+}
+
 
 class Bot:
     def __init__(
@@ -56,7 +81,7 @@ class Bot:
     def set_room(self, peer_id, room, date):  # type: (int, int, datetime.date) -> None
         duty_rooms = self._get_all_duty_rooms()
         if room not in duty_rooms:
-            msg = f'{room} комнаты нет среди дежурящих на 6-ом этаже'
+            msg = self._build_room_missing_msg(room)
             self._send_text(msg, peer_id)
         else:
             self._update_sync_table(room, date, duty_rooms)
@@ -73,8 +98,16 @@ class Bot:
         if rooms:
             self._resolve_today_rooms(rooms)
             self._remove_rooms(rooms)
-            msg = '❎ Убраны комнаты: ' + ','.join(map(str, rooms))
+            msg = '❎ Убраны комнаты: ' + ', '.join(map(str, rooms))
             self._send_text(msg, peer_id)
+
+    def notify_duty_date(self, peer_id, room):  # type: (int, int) -> None
+        if self._is_room_present(room):
+            date = self._get_duty_date(room)
+            msg = self._build_duty_date_msg(room, date)
+        else:
+            msg = self._build_room_missing_msg(room)
+        self._send_text(msg, peer_id)
 
     def show_today_rooms(self, peer_id):  # type: (int) -> None
         today = self.get_today_date()
@@ -88,7 +121,44 @@ class Bot:
     def is_admin(self, id):  # type: (int) -> bool
         return id in self._admins
 
-    def _resolve_today_rooms(self, rooms):  # type: (Sequence[ont]) -> None
+    def _get_duty_date(self, room):  # type: (int) -> datetime.date
+        today = self.get_today_date()
+
+        current_left_room, current_right_room = self._get_duty_rooms_for_date(today)
+        left_rooms, right_rooms = self._get_side_splitted_rooms()
+        if room in left_rooms:
+            containing_side = left_rooms
+            current_side_room = current_left_room
+        else:
+            containing_side = right_rooms
+            current_side_room = current_right_room
+
+        offset = (containing_side.index(room) - containing_side.index(current_side_room))
+        offset %= len(containing_side)
+
+        return today + datetime.timedelta(days=offset)
+
+    def _build_duty_date_msg(self, room, date):  # type: (int, datetime.date) -> str
+        today = self.get_today_date()
+        if date == today:
+            msg = f'{room} комната дежурит сегодня'
+        else:
+            msg = '{room} комната дежурит ориентировочно {day} {month} ({dayofweek})'.format(
+                room=room,
+                day=date.day,
+                month=MONTHS_MAPPING[date.month],
+                dayofweek=WEEK_DAYS_MAPPING[date.weekday()]
+            )
+        return msg
+
+    def _build_room_missing_msg(self, room):  # type:  (int) -> str
+        return f'{room} комнаты нет среди дежурящих на 6-ом этаже'
+
+    def _is_room_present(self, room):  # type: (int) -> bool
+        duty_rooms = self._get_all_duty_rooms()
+        return room in duty_rooms
+
+    def _resolve_today_rooms(self, rooms):  # type: (Sequence[int]) -> None
         today_date = self.get_today_date()
         left_room, right_room = self._get_duty_rooms_for_date(today_date)
         if left_room in rooms or right_room in rooms:
@@ -124,7 +194,9 @@ class Bot:
 
     def _remove_rooms(self, rooms):  # type: (Sequence[int]) -> None
         with self._db_context.session() as session:  # type: Session
-            session.query(DutyRooms).filter(DutyRooms.room.in_(rooms)).delete()
+            session.query(DutyRooms). \
+                filter(DutyRooms.room.in_(rooms)). \
+                delete(synchronize_session='fetch')
 
     def get_today_date(self):  # type: () -> datetime.date
         dt = datetime.datetime.now(tz=pytz.timezone('Asia/Tomsk'))
