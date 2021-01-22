@@ -1,2 +1,2 @@
 from .actions import ActionsEnum
-from .parser import CommandParser
+from .parser import MessageParser

@@ -4,16 +4,19 @@ from .actions import ActionsEnum
 from .grammar import commands_grammar
 
 
-class CommandParser(NodeVisitor):
+class MessageParser(NodeVisitor):
     grammar = commands_grammar
 
-    def visit_command(self, node: Node, visited_children: list):
-        retval: dict = visited_children[1][0]
+    def visit_msg(self, node: Node, visited_children: list):
+        retval: dict = visited_children[1]
 
         if not isinstance(prefix := visited_children[0], Node):  # if present
             retval['mention'] = prefix[0][0]
 
         return retval
+
+    def visit_command(self, node: Node, visited_children: list):
+        return visited_children[0]
 
     def visit_mention(self, node: Node, visited_children: list):
         return {'type': node.children[1].text, 'id': visited_children[2]}
@@ -23,6 +26,9 @@ class CommandParser(NodeVisitor):
 
     def visit_show_list(self, node: Node, visited_children: list):
         return {'action': ActionsEnum.SHOW_LIST}
+
+    def visit_notify_today(self, node: Node, visited_children: list):
+        return {'action': ActionsEnum.NOTIFY_TODAY}
 
     def visit_add_rooms(self, node: Node, visited_children: list):
         return {'action': ActionsEnum.ADD_ROOMS, 'rooms': visited_children[1]}

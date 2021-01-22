@@ -7,3 +7,4 @@ class ActionsEnum(Enum):
     ADD_ROOMS = auto()
     REMOVE_ROOMS = auto()
     SHOW_LIST = auto()
+    NOTIFY_TODAY = auto()
