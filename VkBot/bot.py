@@ -32,8 +32,9 @@ class Bot:
         self._default_keyboard = self._get_keyboard()
         self._group_id = self._get_group_id()
         self._db_context = DBContext(str(self._group_id))
+
         self._fill_rooms_if_empty()
-        self._check_sync()
+        self._resolve_sync()
 
     def show_list(self, peer_id):  # type: (int) -> None
         msg = self._build_rooms_list_msg()
@@ -70,7 +71,7 @@ class Bot:
     def remove_rooms(self, peer_id, rooms):  # type: (int, Sequence[int]) -> None
         rooms = self._filter_removing_rooms(rooms)
         if rooms:
-            self._check_today_rooms(rooms)
+            self._resolve_today_rooms(rooms)
             self._remove_rooms(rooms)
 
     def show_today_rooms(self, peer_id):  # type: (int) -> None
@@ -85,24 +86,29 @@ class Bot:
     def is_admin(self, id):  # type: (int) -> bool
         return id in self._admins
 
-    def _check_today_rooms(self, rooms):  # type: (Sequence[ont]) -> None
+    def _resolve_today_rooms(self, rooms):  # type: (Sequence[ont]) -> None
         today_date = self.get_today_date()
         left_room, right_room = self._get_duty_rooms_for_date(today_date)
         if left_room in rooms or right_room in rooms:
             left_rooms, right_rooms = self._get_side_splitted_rooms()
 
-            left_rooms = tuple(filterfalse(rooms.__contains__, left_rooms))
-            right_rooms = tuple(filterfalse(rooms.__contains__, right_rooms))
+            if left_room in rooms:
+                left_rooms = tuple(filterfalse(rooms.__contains__, left_rooms))
+                new_left_room = min(
+                    (room for room in left_rooms if room >= left_room),
+                    default=left_rooms[0]
+                )
+            else:
+                new_left_room = left_room
 
-            new_left_room = min(
-                (room for room in left_rooms if room >= left_room),
-                default=left_rooms[0]
-            )
-
-            new_right_room = min(
-                (room for room in right_rooms if room >= right_room),
-                default=right_rooms[0]
-            )
+            if right_room in rooms:
+                right_rooms = tuple(filterfalse(rooms.__contains__, right_rooms))
+                new_right_room = min(
+                    (room for room in right_rooms if room >= right_room),
+                    default=right_rooms[0]
+                )
+            else:
+                new_right_room = right_room
 
             with self._db_context.session() as session:  # type: Session
                 session.merge(
@@ -208,7 +214,7 @@ class Bot:
             if not session.query(DutyRooms).count():
                 session.add_all(DutyRooms(room=room) for room in self._available_rooms)
 
-    def _check_sync(self):
+    def _resolve_sync(self):
         with self._db_context.session() as session:  # type: Session
             if session.query(SyncTable).first() is None:
                 left_rooms, right_rooms = self._get_side_splitted_rooms()
