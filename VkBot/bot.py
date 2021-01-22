@@ -21,7 +21,7 @@ class Bot:
             left_rooms=tuple(range(601, 620)),
             right_rooms=tuple(range(620, 639)),
             api_version='5.103'
-    ):  # type: (str, Tuple[int], Tuple[int], Tuple[int], str) -> None
+    ):  # type: (str, Tuple[int, ...], Tuple[int, ...], Tuple[int, ...], str) -> None
         self._admins = admins
 
         self._available_left_rooms = left_rooms
@@ -73,6 +73,8 @@ class Bot:
         if rooms:
             self._resolve_today_rooms(rooms)
             self._remove_rooms(rooms)
+            msg = '❎ Убраны комнаты: ' + ','.join(map(str, rooms))
+            self._send_text(msg, peer_id)
 
     def show_today_rooms(self, peer_id):  # type: (int) -> None
         today = self.get_today_date()
