@@ -76,7 +76,7 @@ class Bot:
     def show_today_rooms(self, peer_id):  # type: (int) -> None
         today = self.get_today_date()
         left_room, right_room = self._get_duty_rooms_for_date(today)
-        msg = f'Сегодня дежурят {left_room} и {right_room}'
+        msg = f'‼ Сегодня дежурят {left_room} и {right_room}'
         self._send_text(msg, peer_id)
 
     def is_bot_group(self, id):  # type: (int) -> bool
