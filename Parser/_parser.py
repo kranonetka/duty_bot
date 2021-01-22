@@ -1,11 +1,12 @@
 from parsimonious.nodes import Node, NodeVisitor
 
-from .actions import ActionsEnum
-from .grammar import commands_grammar
+from ._actions import ActionsEnum
+from ._grammar import message_grammar
+from ._mention import Mention
 
 
 class MessageParser(NodeVisitor):
-    grammar = commands_grammar
+    grammar = message_grammar
 
     def visit_msg(self, node: Node, visited_children: list):
         retval: dict = visited_children[1]
@@ -19,7 +20,10 @@ class MessageParser(NodeVisitor):
         return visited_children[0]
 
     def visit_mention(self, node: Node, visited_children: list):
-        return {'type': node.children[1].text, 'id': visited_children[2]}
+        return Mention(
+            type=node.children[1].text,
+            id=visited_children[2]
+        )
 
     def visit_id(self, node: Node, visited_children: list):
         return int(node.text)
