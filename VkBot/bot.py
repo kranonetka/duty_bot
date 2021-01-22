@@ -130,8 +130,11 @@ class Bot:
             msg = f'‼ Сегодня дежурят {left_room} и {right_room}'
             self._send_text(msg, peer_id)
 
-    def is_bot_group(self, id):  # type: (int) -> bool
-        return id == self._group_id
+    def is_mentioned(self, mention):  # type: (Mention) -> bool
+        if mention.type == 'club':
+            if mention.id == self._group_id:
+                return True
+        return False
 
     def is_admin(self, id):  # type: (int) -> bool
         return id in self._admins
