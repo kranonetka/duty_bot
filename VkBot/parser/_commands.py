@@ -16,6 +16,10 @@ class Command(ABC):
     __repr__ = __str__
 
 
+class PrivilegedCommand(Command, ABC):
+    pass
+
+
 class GetDutyDateCommand(Command):
     def __init__(self, room):
         """
@@ -27,7 +31,7 @@ class GetDutyDateCommand(Command):
         vkbot_instance.notify_duty_date(peer_id, self._room)
 
 
-class SetRoomCommand(Command):
+class SetRoomCommand(PrivilegedCommand):
     def __init__(self, room):
         """
         :type room: int
@@ -39,7 +43,7 @@ class SetRoomCommand(Command):
         vkbot_instance.set_room(peer_id, self._room, today)
 
 
-class AddRoomsCommand(Command):
+class AddRoomsCommand(PrivilegedCommand):
     def __init__(self, rooms):
         """
         :type rooms: Sequence[int]
@@ -50,7 +54,7 @@ class AddRoomsCommand(Command):
         vkbot_instance.add_rooms(peer_id, self._rooms)
 
 
-class RemoveRoomsCommand(Command):
+class RemoveRoomsCommand(PrivilegedCommand):
     def __init__(self, rooms):
         """
         :type rooms: Sequence[int]
@@ -69,3 +73,8 @@ class ShowListCommand(Command):
 class NotifyTodayCommand(Command):
     def perform(self, vkbot_instance, peer_id):  # type: (Bot, int) -> Any
         vkbot_instance.show_today_rooms(peer_id)
+
+
+class HelpCommand(Command):
+    def perform(self, vkbot_instance, peer_id):  # type: (Bot, int) -> Any
+        vkbot_instance.help(peer_id)

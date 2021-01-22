@@ -1,13 +1,9 @@
-import logging
 from datetime import timedelta
 
 from flask import Flask
 
 from VkBot import Bot, MessageParser
 from flask_app.credentials import VK_API_TOKEN
-
-logging.basicConfig(level=logging.DEBUG)
-logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 app.config['DEBUG'] = True

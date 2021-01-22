@@ -3,7 +3,7 @@ import json
 import git
 from flask import request, abort
 
-from flask_app import app, vk_bot, logger
+from flask_app import app, vk_bot
 from flask_app.credentials import WEBHOOK_SECRET, CONFIRMATION_TOKEN, VK_CALLBACK_SECRET
 from flask_app.functions import is_valid_signature, handle_event
 
@@ -43,15 +43,16 @@ def github_webhook():
 @app.route('/6_6', methods=['POST'])
 def vk_callback():
     event = json.loads(request.data)  # type: dict
+
     secret = event.pop('secret', None)
 
-    logger.info(event)
+    print(event)
 
-    if any(key not in event for key in ('type', 'group_id', 'secret')):
+    if any(key not in event for key in ('type', 'group_id')):
         abort(404)
 
     if event['type'] == 'confirmation':
-        if vk_bot.is_mentioned(event['group_id']):
+        if vk_bot.is_bot_id(event['group_id']):
             return CONFIRMATION_TOKEN
 
     if secret != VK_CALLBACK_SECRET:

@@ -11,6 +11,7 @@ from .db import DBContext, DutyRooms, SyncTable, LastRequests
 if False:  # Type hinting
     from sqlalchemy.orm import Session  # noqa
     from typing import Tuple, Sequence, Optional  # noqa
+    from .parser._mention import Mention  # noqa
 
 WEEK_DAYS_MAPPING = {
     0: "Понедельник",
@@ -98,6 +99,7 @@ class Bot:
             self._send_text(msg, peer_id)
         else:
             self._update_sync_table(room, date, duty_rooms)
+            self._reset_timeout(peer_id)
 
     def add_rooms(self, peer_id, rooms):  # type: (int, Sequence[int]) -> None
         rooms_to_add = self._filter_adding_rooms(rooms)
@@ -136,6 +138,9 @@ class Bot:
                 return True
         return False
 
+    def is_bot_id(self, id):  # type:  (int) -> bool
+        return id == self._group_id
+
     def is_admin(self, id):  # type: (int) -> bool
         return id in self._admins
 
@@ -144,6 +149,12 @@ class Bot:
 
     def get_now_datetime(self):  # type: () -> datetime.datetime
         return datetime.datetime.now(tz=self._tz)
+
+    def _reset_timeout(self, peer_id):
+        with self._db_context.session() as session:  # type: Session
+            session.query(LastRequests). \
+                filter(LastRequests.peer_id == peer_id). \
+                delete(synchronize_session='fetch')
 
     def _update_timeout(self, peer_id):  # type: (int) -> None
         now = self.get_now_datetime()
@@ -267,7 +278,7 @@ class Bot:
         if room in left_rooms:
             side = dict(left_room=room)
         else:
-            side = dict(left_room=room)
+            side = dict(right_room=room)
 
         with self._db_context.session() as session:  # type: Session
             session.merge(SyncTable(id=0, date=date, **side))
@@ -292,6 +303,8 @@ class Bot:
 
         left_rooms, right_rooms = self._get_side_splitted_rooms()
 
+        print(left_rooms, right_rooms)
+        print(sync_left_room, sync_right_room)
         left_idx = left_rooms.index(sync_left_room)
         right_idx = right_rooms.index(sync_right_room)
 

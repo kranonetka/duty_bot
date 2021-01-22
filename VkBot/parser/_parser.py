@@ -1,7 +1,7 @@
 from parsimonious.nodes import Node, NodeVisitor
 
 from ._commands import RemoveRoomsCommand, AddRoomsCommand, ShowListCommand, SetRoomCommand, NotifyTodayCommand, \
-    GetDutyDateCommand
+    GetDutyDateCommand, HelpCommand
 from ._grammar import message_grammar
 from ._mention import Mention
 from ._message import Message
@@ -14,7 +14,7 @@ class MessageParser(NodeVisitor):
         """
         :rtype: Message
         """
-        return super(MessageParser, self).parse(text, pos)
+        return super(MessageParser, self).parse(text.lower(), pos)
 
     def visit_message(self, node: Node, visited_children: list):
         message = Message(visited_children[1])
@@ -36,6 +36,9 @@ class MessageParser(NodeVisitor):
     def visit_id(self, node: Node, visited_children: list):
         return int(node.text)
 
+    def visit_help(self, node: Node, visited_children: list):
+        return HelpCommand()
+
     def visit_show_list(self, node: Node, visited_children: list):
         return ShowListCommand()
 
@@ -43,10 +46,10 @@ class MessageParser(NodeVisitor):
         return NotifyTodayCommand()
 
     def visit_add_rooms(self, node: Node, visited_children: list):
-        return AddRoomsCommand(visited_children[1])
+        return AddRoomsCommand(visited_children[-1])
 
     def visit_remove_rooms(self, node: Node, visited_children: list):
-        return RemoveRoomsCommand(visited_children[1])
+        return RemoveRoomsCommand(visited_children[-1])
 
     def visit_set_room(self, node: Node, visited_children: list):
         return SetRoomCommand(visited_children[0])

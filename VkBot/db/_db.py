@@ -31,7 +31,7 @@ class SyncTable(Base):
 
 class DBContext:
     def __init__(self, context_name):  # type: (str) -> None
-        engine = create_engine(f'sqlite:///{context_name}.sqlite', echo=True)
+        engine = create_engine(f'sqlite:///{context_name}.sqlite', echo=False)
 
         Base.metadata.create_all(engine)
 

@@ -3,6 +3,7 @@ import hmac
 
 from parsimonious import ParseError
 
+from VkBot import PrivilegedCommand
 from flask_app import vk_bot, message_parser
 
 
@@ -32,6 +33,10 @@ def handle_event(event):  # type: (dict) -> None
 
         if message.mention:
             if not vk_bot.is_mentioned(message.mention):
+                return
+
+        if isinstance(message.command, PrivilegedCommand):
+            if not vk_bot.is_admin(message_obj['from_id']):
                 return
 
         message.command.perform(vk_bot, message_obj['peer_id'])
