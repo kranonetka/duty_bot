@@ -7,8 +7,7 @@ from VkBot import PrivilegedCommand
 from flask_app import vk_bot, message_parser
 
 
-def is_valid_signature(
-        x_hub_signature, data, private_key):
+def is_valid_signature(x_hub_signature, data, private_key):
     """
     :type x_hub_signature: str
     :type data: bytes

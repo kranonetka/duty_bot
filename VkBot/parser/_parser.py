@@ -20,7 +20,7 @@ class MessageParser(NodeVisitor):
         message = Message(visited_children[1])
 
         if not isinstance(prefix := visited_children[0], Node):  # if present
-            message._mention = prefix[0][0]
+            message.mention = prefix[0][0]
 
         return message
 

@@ -1,7 +1,6 @@
 if False:  # Type hinting
     from ._mention import Mention  # noqa
     from ._commands import Command
-    from typing import Optional
 
 
 class Message:

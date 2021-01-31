@@ -10,8 +10,8 @@ from .db import DBContext, DutyRooms, SyncTable, LastRequests
 
 if False:  # Type hinting
     from sqlalchemy.orm import Session  # noqa
-    from typing import Tuple, Sequence, Optional  # noqa
-    from .parser._mention import Mention  # noqa
+    from typing import Tuple, Sequence, Optional
+    from .parser._mention import Mention
 
 WEEK_DAYS_MAPPING = {
     0: "Понедельник",
@@ -303,8 +303,6 @@ class Bot:
 
         left_rooms, right_rooms = self._get_side_splitted_rooms()
 
-        print(left_rooms, right_rooms)
-        print(sync_left_room, sync_right_room)
         left_idx = left_rooms.index(sync_left_room)
         right_idx = right_rooms.index(sync_right_room)
 
@@ -333,10 +331,7 @@ class Bot:
         keyboard = VkKeyboard(one_time=False)
         keyboard.add_button(
             label='Кто дежурит сегодня',
-            color=VkKeyboardColor.POSITIVE,
-            payload={
-                'command': 'main'
-            }
+            color=VkKeyboardColor.POSITIVE
         )
         return keyboard.get_keyboard()
 
@@ -362,10 +357,11 @@ class Bot:
         return response[0]['id']
 
     def _send_text(self, message, peer_id, **kwargs):  # type: (str, int, dict) -> None
-        kwargs.update(
+        kwargs = dict(
             random_id=random.getrandbits(64),
             keyboard=self._default_keyboard,
             message=message,
-            peer_id=peer_id
+            peer_id=peer_id,
+            **kwargs
         )
         self._session.method('messages.send', kwargs)
