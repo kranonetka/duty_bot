@@ -25,7 +25,8 @@ class Message:
     def mention(self, mention):  # type: (Mention) -> None
         if isinstance(mention, Mention):
             self._mention = mention
-        raise TypeError(mention.__class__.__name__)
+        else:
+            raise TypeError(mention.__class__.__name__)
 
     def __repr__(self):
         return f'Message({self._mention}, {self._command})'
