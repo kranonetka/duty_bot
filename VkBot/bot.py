@@ -324,7 +324,8 @@ class Bot:
         return self._split_rooms_by_side(all_rooms)
 
     def _get_admins_info(self):  # type: () -> List[dict]
-        return self._session.method('users.get', {'user_ids': self._admins})
+        user_ids = ','.join(map(str, self._admins))
+        return self._session.method('users.get', {'user_ids': user_ids})
 
     def _get_all_duty_rooms(self):  # type: () -> Tuple[int]
         with self._db_context.session() as session:  # type: Session
