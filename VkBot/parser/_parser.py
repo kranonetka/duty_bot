@@ -1,7 +1,7 @@
 from parsimonious.nodes import Node, NodeVisitor
 
-from ._commands import RemoveRoomsCommand, AddRoomsCommand, ShowListCommand, SetRoomCommand, NotifyTodayCommand, \
-    GetDutyDateCommand, HelpCommand
+from ._commands import RemoveRoomsCommand, AddRoomsCommand, ShowListCommand, NotifyTodayCommand, \
+    GetDutyDateCommand, HelpCommand, SetRoomsCommand
 from ._grammar import message_grammar
 from ._mention import Mention
 from ._message import Message
@@ -51,8 +51,14 @@ class MessageParser(NodeVisitor):
     def visit_remove_rooms(self, node: Node, visited_children: list):
         return RemoveRoomsCommand(visited_children[-1])
 
-    def visit_set_room(self, node: Node, visited_children: list):
-        return SetRoomCommand(visited_children[0])
+    def visit_set_rooms(self, node: Node, visited_children: list):
+        rooms = [visited_children[0]]
+
+        if not isinstance(other_rooms := visited_children[1], Node):  # If others exists
+            for _, room in other_rooms:
+                rooms.append(room)
+
+        return SetRoomsCommand(rooms)
 
     def visit_get_duty_date(self, node: Node, visited_children: list):
         return GetDutyDateCommand(visited_children[-1])

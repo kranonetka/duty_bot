@@ -59,7 +59,7 @@ class Bot:
         :param tz: datetime.tzinfo
         :param api_version: str
         """
-        self._admins = admins
+        self._admin_ids = admins
         self._timeout = today_notification_timeout
         self._tz = tz
 
@@ -92,12 +92,14 @@ class Bot:
         else:
             self._update_sync_table(room, date, duty_rooms)
             self._reset_timeout(peer_id)
+            msg = self._build_room_setted_msg(room)
+            self._send_text(msg, peer_id)
 
     def add_rooms(self, peer_id, rooms):  # type: (int, Sequence[int]) -> None
         rooms_to_add = self._filter_adding_rooms(rooms)
         if rooms_to_add:
             self._add_rooms(rooms_to_add)
-            msg = '✅ Добавлены комнаты: ' + ', '.join(map(str, rooms))
+            msg = '➕ Добавлены комнаты: ' + ', '.join(map(str, rooms))
             self._send_text(msg, peer_id)
 
     def remove_rooms(self, peer_id, rooms_to_remove):  # type: (int, Sequence[int]) -> None
@@ -105,7 +107,7 @@ class Bot:
         if rooms_to_remove:
             self._update_sync_before_removing(rooms_to_remove)
             self._remove_rooms(rooms_to_remove)
-            msg = '❎ Убраны комнаты: ' + ', '.join(map(str, rooms_to_remove))
+            msg = '➖ Убраны комнаты: ' + ', '.join(map(str, rooms_to_remove))
             self._send_text(msg, peer_id)
 
     def notify_duty_date(self, peer_id, room):  # type: (int, int) -> None
@@ -134,7 +136,7 @@ class Bot:
         return id == self._group_id
 
     def is_admin(self, id):  # type: (int) -> bool
-        return id in self._admins
+        return id in self._admin_ids
 
     def get_today_date(self):  # type: () -> datetime.date
         return self.get_now_datetime().date()
@@ -216,7 +218,7 @@ class Bot:
               '🔸 Помощь -- вывод этого сообщения\n' \
               '🔸 Кнопка "Кто дежурит сегодня" -- вывод дежурящих сегодня комнат\n' \
               '\n' \
-              'Администраторы:\n'
+              '🌟 Администраторы:\n'
 
         admins = self._get_admins_info()
 
@@ -324,7 +326,7 @@ class Bot:
         return self._split_rooms_by_side(all_rooms)
 
     def _get_admins_info(self):  # type: () -> List[dict]
-        user_ids = ','.join(map(str, self._admins))
+        user_ids = ','.join(map(str, self._admin_ids))
         return self._session.method('users.get', {'user_ids': user_ids})
 
     def _get_all_duty_rooms(self):  # type: () -> Tuple[int]
@@ -376,3 +378,6 @@ class Bot:
             **kwargs
         )
         self._session.method('messages.send', kwargs)
+
+    def _build_room_setted_msg(self, room):
+        return f'✔ {room} комната установлена дежурящей сегодня'

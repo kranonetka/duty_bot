@@ -31,16 +31,17 @@ class GetDutyDateCommand(Command):
         vkbot_instance.notify_duty_date(peer_id, self._room)
 
 
-class SetRoomCommand(PrivilegedCommand):
-    def __init__(self, room):
+class SetRoomsCommand(PrivilegedCommand):
+    def __init__(self, rooms):
         """
-        :type room: int
+        :type rooms: Sequence[int]
         """
-        self._room = room
+        self._rooms = rooms
 
     def perform(self, vkbot_instance, peer_id):  # type: (Bot, int) -> Any
         today = vkbot_instance.get_today_date()
-        vkbot_instance.set_room(peer_id, self._room, today)
+        for room in self._rooms:
+            vkbot_instance.set_room(peer_id, room, today)
 
 
 class AddRoomsCommand(PrivilegedCommand):
