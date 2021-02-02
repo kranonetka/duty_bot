@@ -10,7 +10,7 @@ from .db import DBContext, DutyRooms, SyncTable, LastRequests
 
 if False:  # Type hinting
     from sqlalchemy.orm import Session  # noqa
-    from typing import Tuple, Sequence, Optional
+    from typing import Tuple, Sequence, Optional, List
     from .parser._mention import Mention
 
 WEEK_DAYS_MAPPING = {
@@ -67,7 +67,7 @@ class Bot:
         self._available_right_rooms = right_rooms
         self._available_rooms = left_rooms + right_rooms
 
-        self._session = vk_api.VkApi(token=access_token, api_version=api_version)
+        self._session = vk_api.vk_api.VkApiGroup(token=access_token, api_version=api_version)
         self._default_keyboard = self._get_keyboard()
         self._group_id = self._get_group_id()
         self._db_context = DBContext(str(self._group_id))
@@ -217,7 +217,13 @@ class Bot:
               '🔸 Кнопка "Кто дежурит сегодня" -- вывод дежурящих сегодня комнат\n' \
               '\n' \
               'Администраторы:\n'
-        msg += '\n'.join(map('@id{}'.format, self._admins))
+
+        admins = self._get_admins_info()
+
+        msg += '\n'.join(
+            f'[id{admin["id"]}|{admin["first_name"]} {admin["last_name"]}]'
+            for admin in admins
+        )
         return msg
 
     def _is_room_present(self, room):  # type: (int) -> bool
@@ -316,6 +322,9 @@ class Bot:
     def _get_side_splitted_rooms(self):  # type: () -> Tuple[Tuple[int], Tuple[int]]
         all_rooms = self._get_all_duty_rooms()
         return self._split_rooms_by_side(all_rooms)
+
+    def _get_admins_info(self):  # type: () -> List[dict]
+        return self._session.method('users.get', {'user_ids': self._admins})
 
     def _get_all_duty_rooms(self):  # type: () -> Tuple[int]
         with self._db_context.session() as session:  # type: Session
