@@ -2,6 +2,7 @@ import datetime
 import random
 from itertools import zip_longest, filterfalse
 
+import git
 import pytz
 import vk_api
 from vk_api.keyboard import VkKeyboard, VkKeyboardColor
@@ -227,6 +228,11 @@ class Bot:
             f'[id{admin["id"]}|{admin["first_name"]} {admin["last_name"]}]'
             for admin in admins
         )
+
+        repo = git.Repo('.')
+        msg += '\n' \
+               '\n' \
+               f'revision: {repo.head.commit.hexsha}'
         return msg
 
     def _is_room_present(self, room):  # type: (int) -> bool
