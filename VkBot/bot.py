@@ -242,9 +242,11 @@ class Bot:
         )
 
         repo = git.Repo('.')
+        last_commit = repo.head.commit
         msg += '\n' \
                '\n' \
-               f'revision: {repo.head.commit.hexsha} ({repo.head.commit.message})'
+               f'revision: {last_commit.hexsha}\n' \
+               f'{last_commit.message.strip()}'
         return msg
 
     def _is_room_present(self, room):  # type: (int) -> bool
