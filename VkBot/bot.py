@@ -99,8 +99,14 @@ class Bot:
     def add_rooms(self, peer_id, rooms):  # type: (int, Sequence[int]) -> None
         rooms_to_add = self._filter_adding_rooms(rooms)
         if rooms_to_add:
+            today = self.get_today_date()
+            current_left, current_right = self._get_duty_rooms_for_date(today)
+
             self._add_rooms(rooms_to_add)
-            msg = '➕ Добавлены комнаты: ' + ', '.join(map(str, rooms))
+
+            self._set_rooms_for_date(current_left, current_right, today)
+
+            msg = self._build_added_msg(rooms_to_add)
             self._send_text(msg, peer_id)
 
     def remove_rooms(self, peer_id, rooms_to_remove):  # type: (int, Sequence[int]) -> None
@@ -108,7 +114,7 @@ class Bot:
         if rooms_to_remove:
             self._update_sync_before_removing(rooms_to_remove)
             self._remove_rooms(rooms_to_remove)
-            msg = '➖ Убраны комнаты: ' + ', '.join(map(str, rooms_to_remove))
+            msg = self._build_removed_msg(rooms_to_remove)
             self._send_text(msg, peer_id)
 
     def notify_duty_date(self, peer_id, room):  # type: (int, int) -> None
@@ -205,8 +211,14 @@ class Bot:
             )
         return msg
 
-    def _build_room_missing_msg(self, room):  # type:  (int) -> str
+    def _build_room_missing_msg(self, room):  # type: (int) -> str
         return f'{room} комнаты нет среди дежурящих на 6-ом этаже'
+
+    def _build_added_msg(self, rooms):  # type: (Sequence[int, ...]) -> str
+        return '➕ Добавлены комнаты: ' + ', '.join(map(str, rooms))
+
+    def _build_removed_msg(self, rooms):  # type: (Sequence[int, ...]) -> str
+        return '➖ Убраны комнаты: ' + ', '.join(map(str, rooms))
 
     def _build_help_msg(self):  # type: () -> str
         msg = '❓ Команды:\n' \
@@ -232,7 +244,7 @@ class Bot:
         repo = git.Repo('.')
         msg += '\n' \
                '\n' \
-               f'revision: {repo.head.commit.hexsha}'
+               f'revision: {repo.head.commit.hexsha} ({repo.head.commit.message})'
         return msg
 
     def _is_room_present(self, room):  # type: (int) -> bool
@@ -298,6 +310,17 @@ class Bot:
 
         with self._db_context.session() as session:  # type: Session
             session.merge(SyncTable(id=0, date=date, **side))
+
+    def _set_rooms_for_date(self, left_room, right_room, date):  # type: (int, int, datetime.date) -> None
+        with self._db_context.session() as session:  # type: Session
+            session.merge(
+                SyncTable(
+                    id=0,
+                    date=date,
+                    left_room=left_room,
+                    right_room=right_room
+                )
+            )
 
     def _build_rooms_list_msg(self):  # type: () -> str
         left_rooms, right_rooms = self._get_side_splitted_rooms()
