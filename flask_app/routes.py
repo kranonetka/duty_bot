@@ -40,14 +40,6 @@ def github_webhook():
         abort(404)
 
 
-@app.route('/vk_auth')
-def code():
-    print(request.url)
-    print(request.args)
-    print(request.data)
-    return 'Ну хз'
-
-
 @app.route('/6_6', methods=['POST'])
 def vk_callback():
     event = json.loads(request.data)  # type: dict
