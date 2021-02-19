@@ -40,10 +40,11 @@ def github_webhook():
         abort(404)
 
 
-@app.route('/code', methods=['GET'])
+@app.route('/vk_auth', methods=['GET'])
 def code():
-    print(request.args.get('code'))
-    return 'Спасибо)'
+    print(request.args)
+    print(request.data)
+    return 'Ну хз'
 
 
 @app.route('/6_6', methods=['POST'])
