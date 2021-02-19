@@ -42,6 +42,7 @@ def github_webhook():
 
 @app.route('/vk_auth', methods=['GET'])
 def code():
+    print(request.url)
     print(request.args)
     print(request.data)
     return 'Ну хз'
