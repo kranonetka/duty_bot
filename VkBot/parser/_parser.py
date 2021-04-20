@@ -17,7 +17,7 @@ class MessageParser(NodeVisitor):
         return super(MessageParser, self).parse(text.lower(), pos)
 
     def visit_message(self, node: Node, visited_children: list):
-        message = Message(visited_children[1])
+        message = Message(visited_children[2])
 
         if not isinstance(prefix := visited_children[0], Node):  # if present
             message.mention = prefix[0][0]

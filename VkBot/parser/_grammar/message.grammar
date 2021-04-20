@@ -1,4 +1,4 @@
-message         = (mention comma? ws)? command
+message         = (mention comma?)? ws* command
 command         = get_duty_date / set_rooms / add_rooms / remove_rooms / show_list / help / notify_today
 mention         = lpar member_type id mention_delim mention_alias rpar
 member_type     = 'club' / 'id'
