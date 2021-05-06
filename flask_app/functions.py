@@ -1,3 +1,5 @@
+__author__ = 'kranonetka'
+
 import hashlib
 import hmac
 

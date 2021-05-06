@@ -1,7 +1,9 @@
+__author__ = 'kranonetka'
+
 from ._mention import Mention
 
 if False:  # Type hinting
-    from ._commands import Command  # noqa
+    from .commands import Command  # noqa
 
 
 class Message:

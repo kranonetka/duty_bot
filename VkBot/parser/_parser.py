@@ -1,10 +1,12 @@
+__author__ = 'kranonetka'
+
 from parsimonious.nodes import Node, NodeVisitor
 
-from ._commands import RemoveRoomsCommand, AddRoomsCommand, ShowListCommand, NotifyTodayCommand, \
-    GetDutyDateCommand, HelpCommand, SetRoomsCommand
 from ._grammar import message_grammar
 from ._mention import Mention
 from ._message import Message
+from .commands import RemoveRoomsCommand, AddRoomsCommand, ShowListCommand, NotifyTodayCommand, \
+    GetDutyDateCommand, HelpCommand, SetRoomsCommand, AddAdmins, RemoveAdmins
 
 
 class MessageParser(NodeVisitor):
@@ -38,6 +40,33 @@ class MessageParser(NodeVisitor):
 
     def visit_help(self, node: Node, visited_children: list):
         return HelpCommand()
+
+    def visit_mentions(self, node: Node, visited_children: list):
+        mentions = [visited_children[0]]
+        if not isinstance(other_mentions := visited_children[1], Node):  # If others exists
+            for _, mention in other_mentions:  # type: (_, Mention)
+                mentions.append(mention)
+        return mentions
+
+    def visit_add_admins(self, node: Node, visited_children: list):
+        user_ids = []
+
+        mentions = visited_children[2]
+        for mention in mentions:  # type: Mention
+            if mention.type == 'id':
+                user_ids.append(mention.id)
+
+        return AddAdmins(user_ids)
+
+    def visit_remove_admins(self, node: Node, visited_children: list):
+        user_ids = []
+
+        mentions = visited_children[2]
+        for mention in mentions:  # type: Mention
+            if mention.type == 'id':
+                user_ids.append(mention.id)
+
+        return RemoveAdmins(user_ids)
 
     def visit_show_list(self, node: Node, visited_children: list):
         return ShowListCommand()

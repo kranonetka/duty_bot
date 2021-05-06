@@ -1,3 +1,5 @@
+__author__ = 'kranonetka'
+
 from pathlib import Path
 
 import parsimonious

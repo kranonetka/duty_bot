@@ -1,3 +1,5 @@
+__author__ = 'kranonetka'
+
 from contextlib import contextmanager
 
 from sqlalchemy import create_engine, Column, Integer, DateTime, Date
@@ -27,6 +29,11 @@ class SyncTable(Base):
     date = Column(Date, nullable=False)
     left_room = Column(Integer, nullable=False)
     right_room = Column(Integer, nullable=False)
+
+
+class Admins(Base):
+    __tablename__ = 'Admins'
+    admin_id = Column(Integer, primary_key=True, nullable=False)
 
 
 class DBContext:

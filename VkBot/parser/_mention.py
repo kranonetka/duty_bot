@@ -1,3 +1,6 @@
+__author__ = 'kranonetka'
+
+
 class Mention:
     def __init__(self, type, id):  # type: (str, int) -> None
         self.type = type

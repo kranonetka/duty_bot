@@ -1,3 +1,5 @@
+__author__ = 'kranonetka'
+
 import os
 
 CONFIRMATION_TOKEN = os.environ['CONFIRMATION_TOKEN']

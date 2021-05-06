@@ -1,3 +1,5 @@
+__author__ = 'kranonetka'
+
 import datetime
 import random
 from itertools import zip_longest, filterfalse
@@ -7,7 +9,8 @@ import pytz
 import vk_api
 from vk_api.keyboard import VkKeyboard, VkKeyboardColor
 
-from .db import DBContext, DutyRooms, SyncTable, LastRequests
+from VkBot import __author_id__ as AUTHOR_ID
+from .db import DBContext, DutyRooms, SyncTable, LastRequests, Admins
 
 if False:  # Type hinting
     from sqlalchemy.orm import Session  # noqa
@@ -44,7 +47,6 @@ class Bot:
     def __init__(
             self,
             access_token,
-            admins=(),
             left_rooms=tuple(range(601, 620)),
             right_rooms=tuple(range(620, 639)),
             today_notification_timeout=datetime.timedelta(minutes=15),
@@ -60,7 +62,6 @@ class Bot:
         :param tz: datetime.tzinfo
         :param api_version: str
         """
-        self._admin_ids = admins
         self._timeout = today_notification_timeout
         self._tz = tz
 
@@ -74,6 +75,7 @@ class Bot:
         self._db_context = DBContext(str(self._group_id))
 
         self._fill_rooms_if_empty()
+        self._add_admin_if_empty()
         self._resolve_sync()
 
     def show_list(self, peer_id):  # type: (int) -> None
@@ -107,6 +109,29 @@ class Bot:
             self._set_rooms_for_date(current_left, current_right, today)
 
             msg = self._build_added_msg(rooms_to_add)
+            self._send_text(msg, peer_id)
+
+    def add_admin(self, peer_id, admin_id):  # type: (int, int) -> None
+        if self.is_admin(admin_id):
+            msg = self._build_already_admin_msg(admin_id)
+            self._send_text(msg, peer_id)
+        else:
+            with self._db_context.session() as session:  # type: Session
+                session.add(Admins(admin_id=admin_id))
+
+            msg = self._build_admin_added_msg(admin_id)
+            self._send_text(msg, peer_id)
+
+    def remove_admin(self, peer_id, admin_id):  # type: (int, int) -> None
+        if self.is_admin(admin_id):
+            with self._db_context.session() as session:  # type: Session
+                session.query(Admins). \
+                    filter(Admins.admin_id == admin_id). \
+                    delete(synchronize_session='fetch')
+            msg = self._build_admin_removed_msg(admin_id)
+            self._send_text(msg, peer_id)
+        else:
+            msg = self._build_not_a_admin_msg(admin_id)
             self._send_text(msg, peer_id)
 
     def remove_rooms(self, peer_id, rooms_to_remove):  # type: (int, Sequence[int]) -> None
@@ -143,7 +168,8 @@ class Bot:
         return id == self._group_id
 
     def is_admin(self, id):  # type: (int) -> bool
-        return id in self._admin_ids
+        with self._db_context.session() as session:  # type: Session
+            return session.query(Admins).filter(Admins.admin_id == id).first() is not None
 
     def get_today_date(self):  # type: () -> datetime.date
         return self.get_now_datetime().date()
@@ -211,6 +237,26 @@ class Bot:
             )
         return msg
 
+    def _build_admin_added_msg(self, admin_id):  # type: (int) -> str
+        user = self._get_user_info(admin_id)
+        msg = f'➕ Добавлен администратор: [id{user["id"]}|{user["first_name"]} {user["last_name"]}]'
+        return msg
+
+    def _build_already_admin_msg(self, admin_id):  # type: (int) -> str
+        user = self._get_user_info(admin_id)
+        msg = f'[id{user["id"]}|{user["first_name"]} {user["last_name"]}] уже является администратором'
+        return msg
+
+    def _build_admin_removed_msg(self, admin_id):  # type: (int) -> str
+        user = self._get_user_info(admin_id)
+        msg = f'➖ Убран администратор: [id{user["id"]}|{user["first_name"]} {user["last_name"]}]'
+        return msg
+
+    def _build_not_a_admin_msg(self, admin_id):  # type: (int) -> str
+        user = self._get_user_info(admin_id)
+        msg = f'[id{user["id"]}|{user["first_name"]} {user["last_name"]}] не является администратором'
+        return msg
+
     def _build_room_missing_msg(self, room):  # type: (int) -> str
         return f'{room} комнаты нет среди дежурящих на 6-ом этаже'
 
@@ -229,6 +275,8 @@ class Bot:
               '🔸 -<комнаты> -- убрать комнаты из списка дежурящих\n' \
               'Комнаты могут быть заданы как по одиночке, так и диапазоном. Например:\n' \
               '+601 603-606  -  добавит комнаты: 601, 603, 604, 605, 606\n' \
+              '+<упоминание человека> - добавить администратора\n' \
+              '-<упоминание человека> - убрать администратора' \
               '🔸 Помощь -- вывод этого сообщения\n' \
               '🔸 Кнопка "Кто дежурит сегодня" -- вывод дежурящих сегодня комнат\n' \
               '\n' \
@@ -358,8 +406,14 @@ class Bot:
         return self._split_rooms_by_side(all_rooms)
 
     def _get_admins_info(self):  # type: () -> List[dict]
-        user_ids = ','.join(map(str, self._admin_ids))
-        return self._session.method('users.get', {'user_ids': user_ids})
+        with self._db_context.session() as session:  # type: Session
+            admin_ids = session.query(Admins).all()
+        admin_ids = (admin.admin_id for admin in admin_ids)
+        admin_ids = ','.join(map(str, admin_ids))
+        return self._session.method('users.get', {'user_ids': admin_ids})
+
+    def _get_user_info(self, user_id):  # type: (int) -> dict
+        return self._session.method('users.get', {'user_ids': user_id})[0]
 
     def _get_all_duty_rooms(self):  # type: () -> Tuple[int]
         with self._db_context.session() as session:  # type: Session
@@ -384,6 +438,11 @@ class Bot:
         with self._db_context.session() as session:  # type: Session
             if not session.query(DutyRooms).count():
                 session.add_all(DutyRooms(room=room) for room in self._available_rooms)
+
+    def _add_admin_if_empty(self):
+        with self._db_context.session() as session:  # type: Session
+            if not session.query(Admins).count():
+                session.add(Admins(admin_id=AUTHOR_ID))
 
     def _resolve_sync(self):
         with self._db_context.session() as session:  # type: Session
