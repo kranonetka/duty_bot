@@ -408,8 +408,8 @@ class Bot:
     def _get_admins_info(self):  # type: () -> List[dict]
         with self._db_context.session() as session:  # type: Session
             admin_ids = session.query(Admins).all()
-            admin_ids = tuple(admin.admin_id for admin in admin_ids)
-        admin_ids = ','.join(map(str, admin_ids))
+            admin_ids = (admin.admin_id for admin in admin_ids)
+            admin_ids = ','.join(map(str, admin_ids))
         return self._session.method('users.get', {'user_ids': admin_ids})
 
     def _get_user_info(self, user_id):  # type: (int) -> dict
