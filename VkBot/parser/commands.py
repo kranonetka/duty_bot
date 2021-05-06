@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 
 if False:  # Type hinting
     from VkBot import Bot  # noqa
-    from typing import Any, Sequence
+    from typing import Any, Sequence  # noqa
 
 
 class Command(ABC):
