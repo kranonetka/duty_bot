@@ -14,7 +14,7 @@ from .db import DBContext, DutyRooms, SyncTable, LastRequests, Admins
 
 if False:  # Type hinting
     from sqlalchemy.orm import Session  # noqa
-    from typing import Tuple, Sequence, Optional, List
+    from typing import Tuple, Sequence, Optional, List, Any
     from .parser._mention import Mention
 
 WEEK_DAYS_MAPPING = {
@@ -74,6 +74,7 @@ class Bot:
         self._group_id = self._get_group_id()
         self._db_context = DBContext(str(self._group_id))
 
+        self.edit_group(description=self._build_help_msg())
         self._fill_rooms_if_empty()
         self._add_admin_if_empty()
         self._resolve_sync()
@@ -141,6 +142,10 @@ class Bot:
             self._remove_rooms(rooms_to_remove)
             msg = self._build_removed_msg(rooms_to_remove)
             self._send_text(msg, peer_id)
+
+    def edit_group(self, **kwargs):  # type: (Any) -> None
+        kwargs['group_id'] = self._group_id
+        self._session.method('groups.edit', kwargs)
 
     def notify_duty_date(self, peer_id, room):  # type: (int, int) -> None
         if self._is_room_present(room):
