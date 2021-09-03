@@ -160,7 +160,7 @@ class Bot:
             today = self.get_today_date()
             left_room, right_room = self._get_duty_rooms_for_date(today)
             self._update_timeout(peer_id)
-            msg = f'‼ Сегодня дежурят {left_room} и {right_room}'
+            msg = f'#Дежурство\n‼ Сегодня дежурят {left_room} и {right_room}'
             self._send_text(msg, peer_id)
 
     def is_mentioned(self, mention):  # type: (Mention) -> bool
