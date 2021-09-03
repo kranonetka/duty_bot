@@ -474,6 +474,7 @@ class Bot:
         kwargs = dict(
             random_id=random.getrandbits(64),
             # keyboard=self._default_keyboard,
+            keyboard=VkKeyboard.get_empty_keyboard(),
             message=message,
             peer_id=peer_id,
             **kwargs
