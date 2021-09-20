@@ -266,10 +266,10 @@ class Bot:
         return f'{room} комнаты нет среди дежурящих на 6-ом этаже'
 
     def _build_added_msg(self, rooms):  # type: (Sequence[int, ...]) -> str
-        return '➕ Добавлены комнаты: ' + ', '.join(map(str, rooms))
+        return '➕ Добавлены комнаты: ' + ', '.join(map(str, sorted(rooms)))
 
     def _build_removed_msg(self, rooms):  # type: (Sequence[int, ...]) -> str
-        return '➖ Убраны комнаты: ' + ', '.join(map(str, rooms))
+        return '➖ Убраны комнаты: ' + ', '.join(map(str, sorted(rooms)))
 
     def _build_help_msg(self):  # type: () -> str
         msg = '❓ Команды:\n' \
