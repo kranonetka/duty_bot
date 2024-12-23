@@ -14,8 +14,8 @@ from .db import DBContext, DutyRooms, SyncTable, LastRequests, Admins
 
 if False:  # Type hinting
     from sqlalchemy.orm import Session  # noqa
-    from typing import Tuple, Sequence, Optional, List, Any
-    from .parser._mention import Mention
+    from typing import Tuple, Sequence, Optional, List, Any  # noqa
+    from .parser._mention import Mention  # noqa
 
 WEEK_DAYS_MAPPING = {
     0: "Понедельник",
