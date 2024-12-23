@@ -1,13 +1,13 @@
 __author__ = 'kranonetka'
 
 import datetime
-import random
 from itertools import zip_longest, filterfalse
 
 import git
 import pytz
 import vk_api
 from vk_api.keyboard import VkKeyboard, VkKeyboardColor
+from vk_api.utils import get_random_id
 
 from VkBot import __author_id__ as AUTHOR_ID
 from .db import DBContext, DutyRooms, SyncTable, LastRequests, Admins
@@ -472,7 +472,7 @@ class Bot:
 
     def _send_text(self, message, peer_id, **kwargs):  # type: (str, int, dict) -> None
         kwargs = dict(
-            random_id=random.getrandbits(64),
+            random_id=get_random_id(),
             # keyboard=self._default_keyboard,
             keyboard=VkKeyboard.get_empty_keyboard(),
             message=message,
